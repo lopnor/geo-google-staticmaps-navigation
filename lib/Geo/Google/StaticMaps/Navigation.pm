@@ -11,7 +11,7 @@ has center => ( isa => 'Geo::Coordinates::Converter', is => 'rw' );
 has width => ( isa => 'Int', is => 'ro', required => 1);
 has height => ( isa => 'Int', is => 'ro', required => 1);
 has span => ( isa => 'Num', is => 'rw');
-has zoom_ratio => ( isa => 'Num', is => 'ro', required => 1, default => 2/3 );
+has zoom_ratio => ( isa => 'Num', is => 'ro', required => 1, default => 1.5 );
 has markers => ( isa => 'ArrayRef', is => 'rw', auto_deref => 1, );
 
 sub url {
