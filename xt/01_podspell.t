@@ -8,3 +8,5 @@ __DATA__
 Nobuo Danjou
 nobuo.danjou@gmail.com
 Geo::Google::StaticMaps::Navigation
+url
+params
