@@ -62,7 +62,7 @@ sub zoom_out {$_[0]->scale(1 / $_[0]->zoom_ratio)}
 sub scale {
     my ($self, $arg) = @_;
     my $clone = $self->clone;
-    $clone->span($clone->span * $arg);
+    $clone->span(sprintf("%3.3f", $clone->span * $arg));
     return $clone;
 }
 
