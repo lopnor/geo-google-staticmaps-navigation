@@ -1,22 +1,76 @@
 package Geo::Google::StaticMaps::Navigation;
 use Any::Moose;
+use Any::Moose 'Util::TypeConstraints';
 use URI;
+use List::Util qw(max min);
 use Storable;
 use Geo::Coordinates::Converter;
 our $VERSION = '0.01';
-use constant baseurl => 'http://maps.google.com/staticmap';
 
+subtype 'Geo::Google::StaticMaps::Navigation::Types::URI'
+    => as 'URI';
+
+coerce 'Geo::Google::StaticMaps::Navigation::Types::URI'
+    => from 'Str'
+    => via { URI->new($_) };
+
+subtype 'Geo::Google::StaticMaps::Navigation::Types::Point'
+    => as 'Geo::Coordinates::Converter';
+
+coerce 'Geo::Google::StaticMaps::Navigation::Types::Point'
+    => from 'ArrayRef'
+    => via { 
+        Geo::Coordinates::Converter->new(
+            latitude => $_->[0],
+            longitude => $_->[1],
+        );
+    };
+
+subtype 'Geo::Google::StaticMaps::Navigation::Types::PointList'
+    => as 'ArrayRef[Geo::Coordinates::Converter]';
+
+coerce 'Geo::Google::StaticMaps::Navigation::Types::PointList'
+    => from 'ArrayRef[ArrayRef]'
+    => via { 
+        [ map {
+        Geo::Coordinates::Converter->new(
+            latitude => $_->[0],
+            longitude => $_->[1],
+        ) } @$_ ];
+    };
+
+subtype 'Geo::Google::StaticMaps::Navigation::Types::Span'
+    => as 'Num'
+    => where { ($_ >= 0.0025) && ($_ <= 40.96) };
+
+
+has baseurl => (
+    isa => 'Geo::Google::StaticMaps::Navigation::Types::URI',
+    is => 'ro', 
+    required => 1, 
+    coerce => 1,
+    default => sub {URI->new('http://maps.google.com/staticmap')},
+);
 has key => ( isa => 'Str', is => 'ro', required => 1);
-has center => ( isa => 'Geo::Coordinates::Converter', is => 'rw' );
+has center => ( 
+    isa => 'Geo::Google::StaticMaps::Navigation::Types::Point', 
+    is => 'rw', 
+    coerce => 1,
+);
 has width => ( isa => 'Int', is => 'ro', required => 1);
 has height => ( isa => 'Int', is => 'ro', required => 1);
-has span => ( isa => 'Num', is => 'rw');
-has zoom_ratio => ( isa => 'Num', is => 'ro', required => 1, default => 1.5 );
-has markers => ( isa => 'ArrayRef', is => 'rw', auto_deref => 1, );
+has span => ( isa => 'Geo::Google::StaticMaps::Navigation::Types::Span', is => 'rw');
+has markers => ( 
+    isa => 'Geo::Google::StaticMaps::Navigation::Types::PointList', 
+    is => 'rw', 
+    coerce => 1,
+    auto_deref => 1, 
+);
+has nearby_ratio => (isa => 'Num', is => 'ro', required => 1, default => 1.5);
 
 sub url {
     my ($self) = @_;
-    my $uri = URI->new(baseurl);
+    my $uri = $self->baseurl->clone;
     $uri->query_form(
         center => join(',', $self->center->lat, $self->center->lng),
         size => join('x', $self->width, $self->height),
@@ -49,20 +103,31 @@ sub nearby {
     my ($self, $args) = @_;
     my $clone = $self->clone;
     my $center = Geo::Coordinates::Converter->new(
-        latitude => $clone->center->lat + ($clone->span * ($args->{lat} || 0)),
-        longitude => $clone->center->lng + ($clone->span * ($args->{lng} || 0)),
+        latitude => $clone->center->lat 
+            + ($clone->span * $self->nearby_ratio * ($args->{lat} || 0)),
+        longitude => $clone->center->lng 
+            + ($clone->span * $self->nearby_ratio * ($args->{lng} || 0)),
     );
     $clone->center($center);
     return $clone;
 }
 
-sub zoom_in {$_[0]->scale($_[0]->zoom_ratio)}
-sub zoom_out {$_[0]->scale(1 / $_[0]->zoom_ratio)}
+sub zoom_in {$_[0]->scale('in')}
+sub zoom_out {$_[0]->scale('out')}
 
 sub scale {
     my ($self, $arg) = @_;
+    my ($min, $max) = (0.0025, 40.96);
+    my $span = $min;
+    while ($span <= $max) {
+        if ($span >= $self->span) {
+            $span = $arg eq 'in' ? max($min, $span/2) : min($max, $span*2);
+            last;
+        }
+        $span *= 2;
+    }
     my $clone = $self->clone;
-    $clone->span(sprintf("%3.3f", $clone->span * $arg));
+    $clone->span($span);
     return $clone;
 }
 

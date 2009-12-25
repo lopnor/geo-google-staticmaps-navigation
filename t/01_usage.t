@@ -8,8 +8,6 @@ use LWP::Simple;
 BEGIN { 
     if (! $ENV{GOOGLE_MAPS_API_KEY}) {
         plan skip_all => 'Set GOOGLE_MAPS_API_KEY to run this test.';
-    } else {
-        plan tests => 10;
     }
 }
 
@@ -17,18 +15,31 @@ my $map = Geo::Google::StaticMaps::Navigation->new(
     key => $ENV{GOOGLE_MAPS_API_KEY},
     height => 200,
     width => 200,
-    center => Geo::Coordinates::Converter->new(latitude => 35.662191, longitude => 139.681317),
-    span => 0.002,
-    markers => [ Geo::Coordinates::Converter->new(latitude => 35.662191, longitude => 139.681317) ],
+    center => [35.662191, 139.681317],
+    span => 0.0025,
+    markers => [ [35.662191, 139.681317] ],
 );
 isa_ok $map, 'Geo::Google::StaticMaps::Navigation';
-ok $map->url;
+ok $map->url, $map->url;
 ok get $map->url;
 ok my $clone = $map->clone;
 isa_ok $clone, 'Geo::Google::StaticMaps::Navigation';
 ok get $map->nearby({lat => 1})->url;
-my $zoom = $map->zoom_in;
-is $zoom->params->{span}, 0.003;
-is $zoom->zoom_out->params->{span}, 0.002;
+my $zoom = $map->zoom_out;
+is $zoom->params->{span}, 0.005;
+is $zoom->zoom_in->params->{span}, 0.0025;
 is $map->north->south->params->{lat}, $map->center->lat;
 is $map->west->south->east->north->params->{lng}, $map->center->lng;
+
+ok my $map2 = $map->clone;
+ok $map2->span(0.004);
+is $map2->zoom_out->span, 0.01;
+is $map2->zoom_in->span, 0.0025;
+is $map2->zoom_in->zoom_in->span, 0.0025;
+my $map3 = $map->clone;
+for (1 .. 20) {
+    $map3 = $map3->zoom_out;
+}
+is $map3->span, 40.96;
+
+done_testing;
