@@ -3,6 +3,16 @@ name 'Geo-Google-StaticMaps-Navigation';
 all_from 'lib/Geo/Google/StaticMaps/Navigation.pm';
 
 # requires '';
+requires 'URI';
+requires 'List::Util';
+requires 'Storable';
+requires 'Geo::Coordinates::Converter';
+
+requires_any_moose(
+    prefer => 'Mouse',
+    moose => '0.56',
+    mouse => '0.40',
+);
 
 tests 't/*.t';
 author_tests 'xt';

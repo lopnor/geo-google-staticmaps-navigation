@@ -1,5 +1,6 @@
 package Geo::Google::StaticMaps::Navigation;
 use Any::Moose;
+use 5.008_001;
 use Any::Moose 'Util::TypeConstraints';
 use URI;
 use List::Util qw(max min);
@@ -51,15 +52,22 @@ has baseurl => (
     coerce => 1,
     default => sub {URI->new('http://maps.google.com/staticmap')},
 );
-has key => ( isa => 'Str', is => 'ro', required => 1);
+has key => (
+    is => 'ro', 
+    isa => 'Str', 
+    required => 1 
+);
 has center => ( 
     isa => 'Geo::Google::StaticMaps::Navigation::Types::Point', 
     is => 'rw', 
     coerce => 1,
 );
-has width => ( isa => 'Int', is => 'ro', required => 1);
-has height => ( isa => 'Int', is => 'ro', required => 1);
-has span => ( isa => 'Geo::Google::StaticMaps::Navigation::Types::Span', is => 'rw');
+has width => ( isa => 'Int', is => 'ro', required => 1 );
+has height => ( isa => 'Int', is => 'ro', required => 1 );
+has span => ( 
+    is => 'rw',
+    isa => 'Geo::Google::StaticMaps::Navigation::Types::Span', 
+);
 has markers => ( 
     isa => 'Geo::Google::StaticMaps::Navigation::Types::PointList', 
     is => 'rw', 
@@ -67,6 +75,11 @@ has markers => (
     auto_deref => 1, 
 );
 has nearby_ratio => (isa => 'Num', is => 'ro', required => 1, default => 1.5);
+has pageurl => (
+    is => 'rw',
+    isa => 'Geo::Google::StaticMaps::Navigation::Types::URI',
+    coerce => 1,
+);
 
 sub url {
     my ($self) = @_;
@@ -109,6 +122,7 @@ sub nearby {
             + ($clone->span * $self->nearby_ratio * ($args->{lng} || 0)),
     );
     $clone->center($center);
+    $clone->_setup_pageurl($self);
     return $clone;
 }
 
@@ -128,7 +142,20 @@ sub scale {
     }
     my $clone = $self->clone;
     $clone->span($span);
+    $clone->_setup_pageurl($self);
     return $clone;
+}
+
+sub _setup_pageurl {
+    my ($self, $from) = @_;
+    my $url = $from->pageurl->clone;
+    $url->query_form(
+        {
+            $url->query_form,
+            %{$self->params},
+        }
+    );
+    $self->pageurl($url);
 }
 
 1;
@@ -141,6 +168,12 @@ Geo::Google::StaticMaps::Navigation -
 =head1 SYNOPSIS
 
   use Geo::Google::StaticMaps::Navigation;
+
+  my $map = Geo::Google::StaticMaps::Navigation->new(
+    key => 'my_google_maps_api_key',
+    center => [$lat, $lng],
+    span => 0.01,
+  );
 
 =head1 DESCRIPTION
 

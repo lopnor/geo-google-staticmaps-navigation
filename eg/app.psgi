@@ -8,6 +8,7 @@ use Plack::Request;
 use Geo::Google::StaticMaps::Navigation;
 use Text::MicroTemplate qw(:all);
 
+$ENV{BASEURL} ||= 'http://maps.google.com/staticmap';
 my $template = do {local $/; <DATA>};
 
 sub {
@@ -23,8 +24,10 @@ sub {
         center => [$lat, $lng],
         markers => [[$lat, $lng]],
         span => $span,
+        pageurl => $req->uri,
+        baseurl => $ENV{BASEURL},
     );
-    my $body = render_mt($template, $map, $req->uri)->as_string;
+    my $body = render_mt($template, $map)->as_string;
     my $res = $req->new_response(200);
     $res->content_type('text/html');
     $res->body($body);
@@ -36,9 +39,7 @@ __DATA__
 <center>
 <img src="<?= $_[0]->url ?>" /><br>
 ? for my $d (qw(north west south east zoom_in zoom_out)) {
-?   my $link = URI->new_abs('/', $_[1]);
-?   $link->query_form( $_[0]->$d->params );
-<a href="<?= $link ?>"><?= $d ?></a>
+<a href="<?= $_[0]->$d->pageurl ?>"><?= $d ?></a>
 ? }
 </center>
 </body>
