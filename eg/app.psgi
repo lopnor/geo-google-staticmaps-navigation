@@ -8,7 +8,7 @@ use Plack::Request;
 use Geo::Google::StaticMaps::Navigation;
 use Text::MicroTemplate qw(:all);
 
-$ENV{BASEURL} ||= 'http://maps.google.com/staticmap';
+my $baseurl = $ENV{BASEURL} || 'http://maps.google.com/staticmap';
 my $template = do {local $/; <DATA>};
 
 sub {
@@ -25,7 +25,7 @@ sub {
         markers => [[$lat, $lng]],
         span => $span,
         pageurl => $req->uri,
-        baseurl => $ENV{BASEURL},
+        baseurl => $baseurl,
     );
     my $body = render_mt($template, $map)->as_string;
     my $res = $req->new_response(200);

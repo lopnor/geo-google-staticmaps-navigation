@@ -6,6 +6,8 @@ use URI;
 use List::Util qw(max min);
 use Storable;
 use Geo::Coordinates::Converter;
+use Math::Trig;
+use Math::Trig ':great_circle';
 our $VERSION = '0.01';
 
 subtype 'Geo::Google::StaticMaps::Navigation::Types::URI'
@@ -24,6 +26,8 @@ coerce 'Geo::Google::StaticMaps::Navigation::Types::Point'
         Geo::Coordinates::Converter->new(
             latitude => $_->[0],
             longitude => $_->[1],
+            datum => 'wgs84',
+            format => 'degree',
         );
     };
 
@@ -37,6 +41,8 @@ coerce 'Geo::Google::StaticMaps::Navigation::Types::PointList'
         Geo::Coordinates::Converter->new(
             latitude => $_->[0],
             longitude => $_->[1],
+            datum => 'wgs84',
+            format => 'degree',
         ) } @$_ ];
     };
 
@@ -74,7 +80,7 @@ has markers => (
     coerce => 1,
     auto_deref => 1, 
 );
-has nearby_ratio => (isa => 'Num', is => 'ro', required => 1, default => 1.5);
+has nearby_ratio => (isa => 'Num', is => 'ro', required => 1, default => 1);
 has pageurl => (
     is => 'rw',
     isa => 'Geo::Google::StaticMaps::Navigation::Types::URI',
@@ -115,16 +121,40 @@ sub west {$_[0]->nearby({lng => -1})};
 sub nearby {
     my ($self, $args) = @_;
     my $clone = $self->clone;
+
+    my ($lat, $lng) = $self->next_latlng(
+        $self->span * $self->nearby_ratio * ($args->{lat} || 0),
+        $self->span * $self->nearby_ratio * ($args->{lng} || 0),
+    );
     my $center = Geo::Coordinates::Converter->new(
-        latitude => $clone->center->lat 
-            + ($clone->span * $self->nearby_ratio * ($args->{lat} || 0)),
-        longitude => $clone->center->lng 
-            + ($clone->span * $self->nearby_ratio * ($args->{lng} || 0)),
+        latitude => $lat,
+        longitude => $lng,
+        datum => 'wgs84',
+        format => 'degree',
     );
     $clone->center($center);
     $clone->_setup_pageurl($self);
     return $clone;
 }
+
+sub next_latlng {
+    my ($self, $move_lat, $move_lng) = @_;
+    my $dist = great_circle_distance(
+        NESW(0,0),
+        NESW($move_lng, $move_lat)
+    );
+    my $dir = great_circle_direction(
+        NESW($self->center->lng, $self->center->lat), 
+        NESW($self->center->lng + $move_lng, $self->center->lat + $move_lat ), 
+    );
+    my ($lng, $lat) = great_circle_destination(
+        NESW($self->center->lng, $self->center->lat),
+        $dir, $dist
+    );
+    return ( rad2deg($lat), rad2deg($lng) );
+}
+
+sub NESW { deg2rad($_[0]), deg2rad(90 - $_[1]) }
 
 sub zoom_in {$_[0]->scale('in')}
 sub zoom_out {$_[0]->scale('out')}
@@ -148,6 +178,7 @@ sub scale {
 
 sub _setup_pageurl {
     my ($self, $from) = @_;
+    $from->pageurl or return;
     my $url = $from->pageurl->clone;
     $url->query_form(
         {
