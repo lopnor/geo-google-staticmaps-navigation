@@ -20,7 +20,7 @@ sub {
 
     my $map = Geo::Google::StaticMaps::Navigation->new(
         key => $ENV{GOOGLE_MAPS_API_KEY},
-        size => [ 500, 300 ],
+        size => [ 500, 400 ],
         center => [$lat, $lng],
         markers => {point => [$lat, $lng], size => 'mid', color => 'red'},
         zoom => $zoom,
@@ -38,7 +38,7 @@ __DATA__
 <center>
 <img src="<?= $_[0]->url ?>" /><br>
 ? for my $d (qw(north west south east zoom_in zoom_out)) {
-<a href="<?= $_[0]->$d->uri_for($_[1]) ?>"><?= $d ?></a>
+<a href="<?= $_[0]->$d->uri_with($_[1]) ?>"><?= $d ?></a>
 ? }
 <br />
 <a href="./?lat=64.148054&lng=-21.895065">Reykjavik</a>

@@ -4,7 +4,7 @@ use warnings;
 use base 'Geo::Google::StaticMaps';
 use Geo::Mercator;
 
-our $degree_per_pixel_on_zoom_9 = 1/365;
+our $degree_per_pixel_on_zoom_3 = 60/342;
 
 sub clone {
     my ($self) = @_;
@@ -18,7 +18,7 @@ sub west {$_[0]->nearby({lng => -1})};
 sub zoom_in {$_[0]->scale(1)}
 sub zoom_out {$_[0]->scale(-1)}
 
-sub uri_for {
+sub uri_with {
     my ($self, $uri) = @_;
     my %orig = $uri->query_form;
     $uri->query_form(
@@ -46,7 +46,7 @@ sub nearby {
 
 sub _degree {
     my ($self, $size, $zoom) = @_;
-    return $size * $degree_per_pixel_on_zoom_9 * ( 2 ** (9 - $zoom));
+    return $size * $degree_per_pixel_on_zoom_3 * ( 2 ** (3 - $zoom));
 }
 
 sub next_latlng {
