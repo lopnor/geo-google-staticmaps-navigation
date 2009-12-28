@@ -9,4 +9,7 @@ Nobuo Danjou
 nobuo.danjou@gmail.com
 Geo::Google::StaticMaps::Navigation
 url
-params
+urls
+lat
+lng
+URI

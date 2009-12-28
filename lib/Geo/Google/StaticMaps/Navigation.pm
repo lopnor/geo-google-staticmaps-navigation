@@ -3,10 +3,11 @@ use strict;
 use warnings;
 use base 'Geo::Google::StaticMaps';
 use Geo::Mercator;
+our $VERSION = '0.01';
 
-our $degree_per_pixel_on_zoom_3 = 60/342;
+our $DEGREE_PER_PIXEL_ON_ZOOM_3 = 60/342;
 
-sub clone {
+sub _clone {
     my ($self) = @_;
     __PACKAGE__->new(%$self);
 }
@@ -19,8 +20,9 @@ sub zoom_in {$_[0]->scale(1)}
 sub zoom_out {$_[0]->scale(-1)}
 
 sub pageurl {
-    my ($self, $uri) = @_;
-    my %orig = $uri->query_form;
+    my ($self, $old_uri) = @_;
+    my %orig = $old_uri->query_form;
+    my $uri = $old_uri->clone;
     $uri->query_form(
         {
             %orig,
@@ -34,7 +36,7 @@ sub pageurl {
 
 sub nearby {
     my ($self, $args) = @_;
-    my $clone = $self->clone;
+    my $clone = $self->_clone;
     $clone->{center} = _next_latlng(
         $clone->{center}->[0],
         $clone->{center}->[1],
@@ -46,14 +48,14 @@ sub nearby {
 
 sub scale {
     my ($self, $arg) = @_;
-    my $clone = $self->clone;
+    my $clone = $self->_clone;
     $clone->{zoom} += $arg;
     return $clone;
 }
 
 sub _degree {
     my ($size, $zoom) = @_;
-    return $size * $degree_per_pixel_on_zoom_3 * ( 2 ** (3 - $zoom));
+    return $size * $DEGREE_PER_PIXEL_ON_ZOOM_3 * ( 2 ** (3 - $zoom));
 }
 
 sub _next_latlng {
@@ -72,35 +74,70 @@ __END__
 
 =head1 NAME
 
-Geo::Google::StaticMaps::Navigation -
+Geo::Google::StaticMaps::Navigation - generates pagers for Google Static Maps
 
 =head1 SYNOPSIS
 
   use Geo::Google::StaticMaps::Navigation;
 
+  my $map = Geo::Google::StaticMaps::Navigation->new(
+    key    => "your Google Maps API key",
+    size   => [ 500, 400 ],
+    center => [ 35.683, 139.766 ], # tokyo station
+    zoom   => 9,
+  );
+
+  my $north_map_url = $map->north->url;
+
+  # see Geo::Google::StaticMaps for detailed informations
+  # of the constructor and the url method.
+
+  my $uri = URI->new('http://example.com/map');
+  my $north_map_pageurl = $map->north->pageurl($uri);
+
+  # returns URI for next page with the map on the north like:
+  # http://example.com/map?lat=36.5666495508921&lng=139.766&zoom=9
+
 =head1 DESCRIPTION
 
-Geo::Google::StaticMaps::Navigation is
+Geo::Google::StaticMaps::Navigation generates pagers and nearby map urls
+for given Google Static Map informations.
 
 =head1 METHODS
 
-=head2 nearby
-
-returns nearby map.
-
 =head2 north, south, west, east
 
-returns nearby map for each direction.
+returns nearby map object for each direction.
 
 =head2 zoom_in, zoom_out
 
 returns zoomed map.
+
+=head2 pageurl($old_uri)
+
+returns URI object with query parameters for the map containing lat, lng, zoom.
+
+=head2 nearby({lat => $move_rate, lng => $move_rate})
+
+returns nearby map. $map->nearby({lat => 1}) is identical to 
+$map->north, and $map->nearby({lng => -1}) is $map->west.
+
+=head2 scale($zoom_delta)
+
+returns zoomed map with given delta. $map->scale( 1 ) is identical 
+to $map->zoom_in, and $map->scale( -1 ) is $map->soom_out.
 
 =head1 AUTHOR
 
 Nobuo Danjou E<lt>nobuo.danjou@gmail.comE<gt>
 
 =head1 SEE ALSO
+
+L<Geo::Google::StaticMaps>
+
+L<Geo::Mercator>
+
+L<http://code.google.com/apis/maps/documentation/staticmaps/>
 
 =head1 LICENSE
 
