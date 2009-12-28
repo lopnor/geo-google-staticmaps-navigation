@@ -38,7 +38,7 @@ __DATA__
 <center>
 <img src="<?= $_[0]->url ?>" /><br>
 ? for my $d (qw(north west south east zoom_in zoom_out)) {
-<a href="<?= $_[0]->$d->uri_with($_[1]) ?>"><?= $d ?></a>
+<a href="<?= $_[0]->$d->pageurl($_[1]) ?>"><?= $d ?></a>
 ? }
 <br />
 <a href="./?lat=64.148054&lng=-21.895065">Reykjavik</a>

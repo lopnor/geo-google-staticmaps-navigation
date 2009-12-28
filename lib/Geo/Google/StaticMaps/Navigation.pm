@@ -18,7 +18,7 @@ sub west {$_[0]->nearby({lng => -1})};
 sub zoom_in {$_[0]->scale(1)}
 sub zoom_out {$_[0]->scale(-1)}
 
-sub uri_with {
+sub pageurl {
     my ($self, $uri) = @_;
     my %orig = $uri->query_form;
     $uri->query_form(
@@ -35,29 +35,13 @@ sub uri_with {
 sub nearby {
     my ($self, $args) = @_;
     my $clone = $self->clone;
-    $clone->{center} = $clone->next_latlng(
+    $clone->{center} = _next_latlng(
         $clone->{center}->[0],
         $clone->{center}->[1],
-        $self->_degree($clone->{size}->[1], $clone->{zoom}) * ($args->{lat} || 0),
-        $self->_degree($clone->{size}->[0], $clone->{zoom}) * ($args->{lng} || 0),
+        _degree($clone->{size}->[1], $clone->{zoom}) * ($args->{lat} || 0),
+        _degree($clone->{size}->[0], $clone->{zoom}) * ($args->{lng} || 0),
     );
     return $clone;
-}
-
-sub _degree {
-    my ($self, $size, $zoom) = @_;
-    return $size * $degree_per_pixel_on_zoom_3 * ( 2 ** (3 - $zoom));
-}
-
-sub next_latlng {
-    my ($self, $lat, $lng, $move_lat, $move_lng) = @_;
-    my $move_y = [ mercate($move_lat, 0) ]->[1] - [ mercate(0,0) ]->[1];
-    my ($x, $y) = mercate($lat, $lng);
-    my ($new_lat) = demercate($x, $y+$move_y);
-    return [ 
-        $new_lat,
-        $lng + $move_lng,
-    ];
 }
 
 sub scale {
@@ -65,6 +49,22 @@ sub scale {
     my $clone = $self->clone;
     $clone->{zoom} += $arg;
     return $clone;
+}
+
+sub _degree {
+    my ($size, $zoom) = @_;
+    return $size * $degree_per_pixel_on_zoom_3 * ( 2 ** (3 - $zoom));
+}
+
+sub _next_latlng {
+    my ($lat, $lng, $move_lat, $move_lng) = @_;
+    my $move_y = [ mercate($move_lat, 0) ]->[1] - [ mercate(0,0) ]->[1];
+    my ($x, $y) = mercate($lat, $lng);
+    my ($new_lat) = demercate($x, $y+$move_y);
+    return [ 
+        $new_lat,
+        $lng + $move_lng,
+    ];
 }
 
 1;
