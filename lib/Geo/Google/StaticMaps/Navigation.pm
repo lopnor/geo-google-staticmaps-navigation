@@ -6,8 +6,8 @@ use URI;
 use List::Util qw(max min);
 use Storable;
 use Geo::Coordinates::Converter;
-use Math::Trig;
-use Math::Trig ':great_circle';
+use Geo::Ellipsoid;
+use Geo::Mercator;
 our $VERSION = '0.01';
 
 subtype 'Geo::Google::StaticMaps::Navigation::Types::URI'
@@ -50,7 +50,6 @@ subtype 'Geo::Google::StaticMaps::Navigation::Types::Span'
     => as 'Num'
     => where { ($_ >= 0.0025) && ($_ <= 40.96) };
 
-
 has baseurl => (
     isa => 'Geo::Google::StaticMaps::Navigation::Types::URI',
     is => 'ro', 
@@ -80,7 +79,19 @@ has markers => (
     coerce => 1,
     auto_deref => 1, 
 );
-has nearby_ratio => (isa => 'Num', is => 'ro', required => 1, default => 1);
+has maptype => (
+    isa => 'Str',
+    is => 'ro',
+    required => 1,
+    default => 'roadmap',
+);
+has format => (
+    isa => 'Str',
+    is => 'ro',
+    required => 1,
+    default => 'gif',
+);
+has nearby_ratio => (isa => 'Num', is => 'ro', required => 1, default => 2);
 has pageurl => (
     is => 'rw',
     isa => 'Geo::Google::StaticMaps::Navigation::Types::URI',
@@ -96,6 +107,8 @@ sub url {
         key => $self->key,
         span => join(',', $self->span, $self->span),
         markers => join('|', map {join(',', $_->lat, $_->lng)} $self->markers ),
+        maptype => $self->maptype,
+        format => $self->format,
     );
     return $uri;
 }
@@ -139,22 +152,15 @@ sub nearby {
 
 sub next_latlng {
     my ($self, $move_lat, $move_lng) = @_;
-    my $dist = great_circle_distance(
-        NESW(0,0),
-        NESW($move_lng, $move_lat)
+    my ($lat, $lng) = @{$self->params}{qw(lat lng)};
+    my $move_y = [ mercate($move_lat, 0) ]->[1] - [ mercate(0,0) ]->[1];
+    my ($x, $y) = mercate($self->center->lat, $self->center->lng);
+    my ($new_lat) = demercate($x, $y+$move_y);
+    return (
+        $new_lat,
+        $lng + $move_lng,
     );
-    my $dir = great_circle_direction(
-        NESW($self->center->lng, $self->center->lat), 
-        NESW($self->center->lng + $move_lng, $self->center->lat + $move_lat ), 
-    );
-    my ($lng, $lat) = great_circle_destination(
-        NESW($self->center->lng, $self->center->lat),
-        $dir, $dist
-    );
-    return ( rad2deg($lat), rad2deg($lng) );
 }
-
-sub NESW { deg2rad($_[0]), deg2rad(90 - $_[1]) }
 
 sub zoom_in {$_[0]->scale('in')}
 sub zoom_out {$_[0]->scale('out')}
