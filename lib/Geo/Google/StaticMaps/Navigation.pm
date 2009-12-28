@@ -6,7 +6,6 @@ use URI;
 use List::Util qw(max min);
 use Storable;
 use Geo::Coordinates::Converter;
-use Geo::Ellipsoid;
 use Geo::Mercator;
 our $VERSION = '0.01';
 

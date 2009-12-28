@@ -7,6 +7,7 @@ requires 'URI';
 requires 'List::Util';
 requires 'Storable';
 requires 'Geo::Coordinates::Converter';
+requires 'Geo::Mercator';
 
 requires_any_moose(
     prefer => 'Mouse',
