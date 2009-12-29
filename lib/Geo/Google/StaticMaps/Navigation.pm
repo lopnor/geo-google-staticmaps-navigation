@@ -2,8 +2,9 @@ package Geo::Google::StaticMaps::Navigation;
 use strict;
 use warnings;
 use base 'Geo::Google::StaticMaps';
+use Carp;
 use Geo::Mercator;
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 our $DEGREE_PER_PIXEL_ON_ZOOM_3 = 60/342;
 
@@ -37,6 +38,7 @@ sub pageurl {
 sub nearby {
     my ($self, $args) = @_;
     my $clone = $self->_clone;
+    croak "zoom parameter is required" unless defined $clone->{zoom};
     $clone->{center} = _next_latlng(
         $clone->{center}->[0],
         $clone->{center}->[1],
@@ -49,6 +51,7 @@ sub nearby {
 sub scale {
     my ($self, $arg) = @_;
     my $clone = $self->_clone;
+    croak "zoom parameter is required" unless defined $clone->{zoom};
     $clone->{zoom} += $arg;
     return $clone;
 }

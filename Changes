@@ -1,4 +1,8 @@
 Revision history for Perl extension Geo::Google::StaticMaps::Navigation
 
+0.02    Wed Dec 30 05:46:00 2009
+        - fix dependencies
+        - checks if the zoom parameter exists
+
 0.01    Tue Dec 29 07:05:00 2009
         - original version
