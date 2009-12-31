@@ -4,7 +4,7 @@ use warnings;
 use base 'Geo::Google::StaticMaps';
 use Carp;
 use Geo::Mercator;
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 our $DEGREE_PER_PIXEL_ON_ZOOM_3 = 60/342;
 
